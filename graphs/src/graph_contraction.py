@@ -1,9 +1,13 @@
 from numpy.random import choice
+from copy import deepcopy
 
 def graph_cut(edges):
     return len(list(edges.values())[0])
 
 def graph_contraction(vertices, edges, weights):
+    vertices = deepcopy(vertices)
+    edges = deepcopy(edges)
+    vertices = deepcopy(weights)
     """Run Karger's contraction algorithm on weighted graph."""
     while len(vertices) > 2:
         # choose random edge from graph
@@ -17,22 +21,19 @@ def graph_contraction(vertices, edges, weights):
         vertices[v] += vertices[u]
         weights[v] = len(edges[v])
         for e in edges[u]:
-
             # re-linking edges from anihilated vertex u to anihilating vertex v
             if e != v and u in edges.get(e, []):
                 # vertex u doesn't exists any more independently
                 edges[e] -= {u}
                 edges[e].update({v})
-                # edges[e] = set([c if c != u else v for c in edges[e]])
         del edges[u]
         del vertices[u]
         del weights[u]
     return vertices, edges, weights
 
 
-class Graph():
-    """Graph class."""
-
+class Graph:
+    """Not directed graph implementation."""
     def __init__(self, connections_string):
         """Initialize Graph from dictionary of connections"""
         self.vertices = dict()
@@ -41,9 +42,9 @@ class Graph():
         self.weights = dict()
         self._cut = None
         for line in connections_string.splitlines():
-            vertex_source, *vertices = list(map(int,line.split("\t")))
+            vertex_source, *vertices = list(map(int, line.split("\t")))
             # vertex with name v will initially containt only himself
-            self.vertices[vertex_source] = [vertex_source]
+            self.vertices[vertex_source] = set([vertex_source])
             self.edges[vertex_source] = set(vertices)
             self.weights[vertex_source] = len(self.edges[vertex_source])
 
@@ -58,3 +59,4 @@ class Graph():
         if self._cut is None:
             self._cut = graph_cut(self.edges)
         return self._cut
+
