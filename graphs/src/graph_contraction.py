@@ -1,62 +1,43 @@
 from numpy.random import choice
 from copy import deepcopy
+from edge import Edge
 
-def graph_cut(edges):
-    return len(list(edges.values())[0])
 
-def graph_contraction(vertices, edges, weights):
+def graph_cut(adjacent):
+    return len(list(adjacent.values())[0])
+
+def graph_contraction(vertices, adjacent, edges):
     vertices = deepcopy(vertices)
     edges = deepcopy(edges)
-    vertices = deepcopy(weights)
     """Run Karger's contraction algorithm on weighted graph."""
     while len(vertices) > 2:
         # choose random edge from graph
-        v = choice(sorted(vertices.keys()), p=[f / sum(weights) for f in sorted(weights.keys())])
-        u = choice(list(edges[v]))
+        chosen_edge = choice(list(edges))
+        v, u = chosen_edge.edge
         # print(f"choosen edge: {v}-{u}")
         # append all edges to vertex v but remove self-loops (e != v and e != u)
-        edges[v].update(edges[u])
-        edges[v] -= {u, v}
         # update vertices adjacent to v
-        vertices[v] += vertices[u]
-        weights[v] = len(edges[v])
-        for e in edges[u]:
-            # re-linking edges from anihilated vertex u to anihilating vertex v
-            if e != v and u in edges.get(e, []):
-                # vertex u doesn't exists any more independently
-                edges[e] -= {u}
-                edges[e].update({v})
-        del edges[u]
+        vertices_joined = vertices[u]
+        adjacent_joined = adjacent[u]
+        adjacent[v].update(adjacent_joined)
+        # avoid self-loops
+        adjacent[v] -= {v}
+        vertices[v].update(vertices_joined)
+
+        edges_anihilated = {Edge(u, v_target) for v_target in adjacent_joined}
+        edges_created = {Edge(v, v_target) for v_target in adjacent_joined}
+        #avoid self-loops
+        edges_created -= {Edge(v, v)}
+        edges -= edges_anihilated
+        edges.update(edges_created)
+        # for e in edges:
+        #     # re-linking edges from anihilated vertex u to anihilating vertex v
+        #     if e != v and u in edges.get(e, []):
+        #         # vertex u doesn't exists any more independently
+        #         edges[e] -= {u}
+        #         edges[e].update({v})
+        # del edges[u]
         del vertices[u]
-        del weights[u]
-    return vertices, edges, weights
-
-
-class Graph:
-    """Not directed graph implementation."""
-    def __init__(self, connections_string):
-        """Initialize Graph from dictionary of connections"""
-        self.vertices = dict()
-        self.edges = dict()
-        # weights correspond to number of vertices adjacent to ith vertex. Use later for sampling edges
-        self.weights = dict()
-        self._cut = None
-        for line in connections_string.splitlines():
-            vertex_source, *vertices = list(map(int, line.split("\t")))
-            # vertex with name v will initially containt only himself
-            self.vertices[vertex_source] = set([vertex_source])
-            self.edges[vertex_source] = set(vertices)
-            self.weights[vertex_source] = len(self.edges[vertex_source])
-
-    def contract(self):
-        self.vertices, self.edges, self.weights = graph_contraction(self.vertices, self.edges, self.weights)
-
-    @property
-    def cut(self):
-        """Calculate cut in contracted graph"""
-        if len(self.vertices) > 2:
-            raise ValueError("Graph not contracted, no cut to calculate.")
-        if self._cut is None:
-            self._cut = graph_cut(self.edges)
-        return self._cut
+        del adjacent[u]
+    return vertices, adjacent, edges
 

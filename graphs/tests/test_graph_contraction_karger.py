@@ -1,6 +1,7 @@
 import unittest
 from time import time
-from graph_contraction import Graph, graph_contraction, graph_cut
+from graph_contraction import graph_contraction, graph_cut
+from graph import Graph
 
 NUMBER_SAMPLE_CUT = 10
 
@@ -25,8 +26,8 @@ class Test_Graph(unittest.TestCase):
         cuts = []
         print("RUNNING CONTRACTION ALGORITHM {n} TIMES")
         for i in range(NUMBER_SAMPLE_CUT):
-            v,e,w = graph_contraction(graph.vertices.copy(), graph.edges.copy(), graph.weights.copy())
-            cut = graph_cut(e)
+            vertices, adjacent, edges = graph_contraction(graph.vertices.copy(), graph.adjacent.copy(), graph.edges.copy())
+            cut = graph_cut(adjacent)
             print(f"{i} GRAPH CUT: {cut}")
             cuts.append(cut)
         print(cuts)
